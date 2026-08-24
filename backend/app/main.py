@@ -1,7 +1,14 @@
-from fastapi import FastAPI
-from fastapi.responses import JSONResponse
+from app.core.database import Base, SessionLocal, engine, get_db
+from app.models.producto import Producto
+from app.schemas.producto import ProductoCreate, ProductoResponse
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from fastapi.responses import JSONResponse
+# pyrefly: ignore [missing-import]
+from sqlalchemy.orm import Session 
+
+# Crea las tablas en PostgreSQL si no existen al iniciar la app
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Dulce Vicio - E-Commerce API",
@@ -18,63 +25,57 @@ app.add_middleware(
 )
 
 
-# --- PASO 1: Modelo Producto ---
-class Producto(BaseModel):
-    id: int
-    nombre: str
-    precio_final: float
-    cuotas_cantidad: int
-    cuotas_valor: float
-    garantia_meses: int
-    stock: int
-
-
-# --- PASO 2: Lista en memoria (Dulce Vicio) ---
-productos_db: list[Producto] = [
-    Producto(
-        id=1,
-        nombre="Chocotorta Familiar",
-        precio_final=12000.0,
-        cuotas_cantidad=3,
-        cuotas_valor=4000.0,
-        garantia_meses=0,
-        stock=15,
-    ),
-    Producto(
-        id=2,
-        nombre="Tiramisú Clásico",
-        precio_final=10500.0,
-        cuotas_cantidad=3,
-        cuotas_valor=3500.0,
-        garantia_meses=0,
-        stock=10,
-    ),
-    Producto(
-        id=3,
-        nombre="Box de Brownies (6 unidades)",
-        precio_final=8000.0,
-        cuotas_cantidad=1,
-        cuotas_valor=8000.0,
-        garantia_meses=0,
-        stock=25,
-    ),
-    Producto(
-        id=4,
-        nombre="Turrón de Quaker Tradicional",
-        precio_final=6500.0,
-        cuotas_cantidad=1,
-        cuotas_valor=6500.0,
-        garantia_meses=0,
-        stock=20,
-    ),
-]
+# --- EVENTO DE INICIALIZACIÓN: Carga la lista inicial en PostgreSQL ---
+@app.on_event("startup")
+def cargar_productos_iniciales():
+    db = SessionLocal()
+    try:
+        # Si la base de datos está vacía, se insertan tus productos originales
+        if db.query(Producto).count() == 0:
+            productos_db = [
+                Producto(
+                    nombre="Chocotorta Familiar",
+                    precio_final=12000.0,
+                    cuotas_cantidad=3,
+                    cuotas_valor=4000.0,
+                    garantia_meses=0,
+                    stock=15,
+                ),
+                Producto(
+                    nombre="Tiramisú Clásico",
+                    precio_final=10500.0,
+                    cuotas_cantidad=3,
+                    cuotas_valor=3500.0,
+                    garantia_meses=0,
+                    stock=10,
+                ),
+                Producto(
+                    nombre="Box de Brownies (6 unidades)",
+                    precio_final=8000.0,
+                    cuotas_cantidad=1,
+                    cuotas_valor=8000.0,
+                    garantia_meses=0,
+                    stock=25,
+                ),
+                Producto(
+                    nombre="Turrón de Quaker Tradicional",
+                    precio_final=6500.0,
+                    cuotas_cantidad=1,
+                    cuotas_valor=6500.0,
+                    garantia_meses=0,
+                    stock=20,
+                ),
+            ]
+            db.add_all(productos_db)
+            db.commit()
+    finally:
+        db.close()
 
 
 # --- ENDPOINT RAÍZ (Información General y Marco Legal) ---
 @app.get("/", tags=["General"])
 async def read_root():
     """Endpoint de bienvenida que proporciona información sobre el comercio electrónico
-
     y declara explícitamente el cumplimiento con la Ley de Defensa del
     Consumidor N° 24.240.
     """
@@ -98,18 +99,26 @@ async def read_root():
     return JSONResponse(status_code=200, content=content)
 
 
-# --- PASO 3: Endpoint GET Productos ---
-@app.get("/productos", response_model=list[Producto], tags=["Productos"])
-def obtener_productos():
-    """Devuelve la lista completa de productos en stock de Dulce Vicio."""
-    return productos_db
-
-
-# --- PASO 4: Endpoint POST Productos ---
-@app.post(
-    "/productos", response_model=Producto, status_code=201, tags=["Productos"]
+# --- PASO 3: Endpoint GET Productos (Desde PostgreSQL) ---
+@app.get(
+    "/productos", response_model=list[ProductoResponse], tags=["Productos"]
 )
-def crear_producto(producto: Producto):
-    """Agrega un nuevo producto a la lista en memoria."""
-    productos_db.append(producto)
-    return producto
+def obtener_productos(db: Session = Depends(get_db)):
+    """Devuelve la lista completa de productos guardados en la base de datos PostgreSQL."""
+    return db.query(Producto).all()
+
+
+# --- PASO 4: Endpoint POST Productos (Hacia PostgreSQL) ---
+@app.post(
+    "/productos",
+    response_model=ProductoResponse,
+    status_code=201,
+    tags=["Productos"],
+)
+def crear_producto(producto: ProductoCreate, db: Session = Depends(get_db)):
+    """Agrega un nuevo producto directamente a la base de datos PostgreSQL."""
+    nuevo_producto = Producto(**producto.model_dump())
+    db.add(nuevo_producto)
+    db.commit()
+    db.refresh(nuevo_producto)
+    return nuevo_producto
