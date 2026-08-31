@@ -1,13 +1,13 @@
 from app.core.database import Base, SessionLocal, engine, get_db
-from app.models.producto import Producto
-from app.schemas.producto import ProductoCreate, ProductoResponse
+from app import models, schemas
+from app.services import productos as productos_service
+from app.services import pedidos as pedidos_service
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-# pyrefly: ignore [missing-import]
-from sqlalchemy.orm import Session 
+from sqlalchemy.orm import Session
 
-# Crea las tablas en PostgreSQL si no existen al iniciar la app
+# Crea las tablas en PostgreSQL si no existen al iniciar la app (Base.metadata.create_all is a fallback, but Alembic also manages it)
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
@@ -24,16 +24,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 # --- EVENTO DE INICIALIZACIÓN: Carga la lista inicial en PostgreSQL ---
 @app.on_event("startup")
 def cargar_productos_iniciales():
     db = SessionLocal()
     try:
-        # Si la base de datos está vacía, se insertan tus productos originales
-        if db.query(Producto).count() == 0:
+        if db.query(models.Producto).count() == 0:
             productos_db = [
-                Producto(
+                models.Producto(
                     nombre="Chocotorta Familiar",
                     precio_final=12000.0,
                     cuotas_cantidad=3,
@@ -41,7 +39,7 @@ def cargar_productos_iniciales():
                     garantia_meses=0,
                     stock=15,
                 ),
-                Producto(
+                models.Producto(
                     nombre="Tiramisú Clásico",
                     precio_final=10500.0,
                     cuotas_cantidad=3,
@@ -49,7 +47,7 @@ def cargar_productos_iniciales():
                     garantia_meses=0,
                     stock=10,
                 ),
-                Producto(
+                models.Producto(
                     nombre="Box de Brownies (6 unidades)",
                     precio_final=8000.0,
                     cuotas_cantidad=1,
@@ -57,7 +55,7 @@ def cargar_productos_iniciales():
                     garantia_meses=0,
                     stock=25,
                 ),
-                Producto(
+                models.Producto(
                     nombre="Turrón de Quaker Tradicional",
                     precio_final=6500.0,
                     cuotas_cantidad=1,
@@ -71,14 +69,9 @@ def cargar_productos_iniciales():
     finally:
         db.close()
 
-
 # --- ENDPOINT RAÍZ (Información General y Marco Legal) ---
 @app.get("/", tags=["General"])
 async def read_root():
-    """Endpoint de bienvenida que proporciona información sobre el comercio electrónico
-    y declara explícitamente el cumplimiento con la Ley de Defensa del
-    Consumidor N° 24.240.
-    """
     content = {
         "mensaje": "¡Bienvenido a la API de Dulce Vicio!",
         "pais": "Argentina",
@@ -98,27 +91,26 @@ async def read_root():
     }
     return JSONResponse(status_code=200, content=content)
 
+# --- ENDPOINTS PRODUCTOS ---
+@app.get("/productos", response_model=list[schemas.ProductoOut], tags=["Productos"])
+def listar_productos(
+    skip: int = 0,
+    limit: int = 10,
+    nombre: str | None = None,
+    precio_max: float | None = None,
+    db: Session = Depends(get_db)
+):
+    return productos_service.listar_productos(db, skip=skip, limit=limit, nombre=nombre, precio_max=precio_max)
 
-# --- PASO 3: Endpoint GET Productos (Desde PostgreSQL) ---
-@app.get(
-    "/productos", response_model=list[ProductoResponse], tags=["Productos"]
-)
-def obtener_productos(db: Session = Depends(get_db)):
-    """Devuelve la lista completa de productos guardados en la base de datos PostgreSQL."""
-    return db.query(Producto).all()
+@app.post("/productos", response_model=schemas.ProductoOut, status_code=201, tags=["Productos"])
+def crear_producto(producto: schemas.ProductoCreate, db: Session = Depends(get_db)):
+    return productos_service.crear_producto(db, producto)
 
+# --- ENDPOINTS PEDIDOS (Para la perspectiva del comprador) ---
+@app.post("/pedidos", response_model=schemas.PedidoOut, status_code=201, tags=["Pedidos"])
+def crear_pedido(pedido: schemas.PedidoCreate, db: Session = Depends(get_db)):
+    return pedidos_service.crear_pedido(db, pedido)
 
-# --- PASO 4: Endpoint POST Productos (Hacia PostgreSQL) ---
-@app.post(
-    "/productos",
-    response_model=ProductoResponse,
-    status_code=201,
-    tags=["Productos"],
-)
-def crear_producto(producto: ProductoCreate, db: Session = Depends(get_db)):
-    """Agrega un nuevo producto directamente a la base de datos PostgreSQL."""
-    nuevo_producto = Producto(**producto.model_dump())
-    db.add(nuevo_producto)
-    db.commit()
-    db.refresh(nuevo_producto)
-    return nuevo_producto
+@app.post("/pedidos/{id}/cancelar", response_model=schemas.PedidoOut, tags=["Pedidos"])
+def cancelar_pedido(id: int, db: Session = Depends(get_db)):
+    return pedidos_service.cancelar_pedido(db, id)

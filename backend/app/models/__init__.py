@@ -1,1 +1,0 @@
-from app.models.producto import Producto

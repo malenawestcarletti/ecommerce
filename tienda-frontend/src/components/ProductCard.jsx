@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function ProductCard({ producto }) {
+export default function ProductCard({ producto, onAddToCart }) {
   // Helper para dar formato de moneda argentina
   const formatearMoneda = (valor) => {
     return new Intl.NumberFormat('es-AR', {
@@ -21,7 +21,7 @@ export default function ProductCard({ producto }) {
             {producto.cuotas_cantidad} cuotas sin interés de {formatearMoneda(producto.cuotas_valor)}
           </p>
         ) : (
-          <p className="product-installments" style={{ color: '#6e584d' }}>
+          <p className="product-installments" style={{ color: 'var(--color-text-light)' }}>
             Pago único
           </p>
         )}
@@ -33,8 +33,14 @@ export default function ProductCard({ producto }) {
           </span>
         </div>
 
-        <button className="btn btn-secondary" style={{ marginTop: '1rem', width: '100%' }} id={`btn-add-cart-${producto.id}`}>
-          Agregar al carrito
+        <button 
+          className="btn btn-secondary" 
+          style={{ marginTop: '1rem', width: '100%' }} 
+          id={`btn-add-cart-${producto.id}`}
+          onClick={() => onAddToCart && onAddToCart(producto)}
+          disabled={producto.stock <= 0}
+        >
+          {producto.stock > 0 ? 'Agregar al carrito' : 'Sin Stock'}
         </button>
       </div>
     </article>

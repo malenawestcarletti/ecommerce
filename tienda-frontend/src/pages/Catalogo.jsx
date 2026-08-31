@@ -2,10 +2,9 @@ import React, { useState, useEffect } from "react";
 import { getProductos } from "../services/api";
 import ProductCard from "../components/ProductCard";
 
-export default function Catalogo({ productos: propProductos, setProductos: propSetProductos }) {
+export default function Catalogo({ productos: propProductos, setProductos: propSetProductos, onAddToCart }) {
   const [localProductos, setLocalProductos] = useState([]);
 
-  // 1. Agregamos los estados que pide la Clase 3
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -26,7 +25,6 @@ export default function Catalogo({ productos: propProductos, setProductos: propS
         })
         .finally(() => setIsLoading(false));
     } else {
-      // Si el estado viene por props, asumimos que no está cargando
       setIsLoading(false);
     }
   }, [isShared]);
@@ -35,7 +33,6 @@ export default function Catalogo({ productos: propProductos, setProductos: propS
     <section id="catalogo">
       <h2 className="section-title">Nuestras Delicias</h2>
 
-      {/* 2. Mostramos cada estado según corresponda */}
       {isLoading && (
         <p style={{ fontStyle: "italic", color: "var(--color-text-light)" }}>
           Cargando productos...
@@ -52,7 +49,7 @@ export default function Catalogo({ productos: propProductos, setProductos: propS
         <div className="products-grid">
           {productos.length > 0 ? (
             productos.map((prod) => (
-              <ProductCard key={prod.id} producto={prod} />
+              <ProductCard key={prod.id} producto={prod} onAddToCart={onAddToCart} />
             ))
           ) : (
             <p style={{ fontStyle: "italic", color: "var(--color-text-light)" }}>
