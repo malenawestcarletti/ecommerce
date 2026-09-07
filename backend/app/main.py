@@ -1,36 +1,45 @@
-from app.core.database import Base, SessionLocal, engine, get_db
-from app import models, schemas
-from app.services import productos as productos_service
-from app.services import pedidos as pedidos_service
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
-# Crea las tablas en PostgreSQL si no existen al iniciar la app (Base.metadata.create_all is a fallback, but Alembic also manages it)
+from app.core.config import settings
+from app.db.database import Base, SessionLocal, engine
+from app.db import models
+from app import schemas
+from app.dependencies import get_db
+from app.routers import productos
+from app.services import pedidos as pedidos_service
+
+# Crea las tablas en PostgreSQL si no existen al iniciar la app
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="Dulce Vicio - E-Commerce API",
+    title=settings.PROJECT_NAME,
     description="Servidor Backend para Dulce Vicio. Cumple con la Ley N° 24.240 de Defensa del Consumidor.",
     version="0.1.0",
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Monta el router modular de productos
+app.include_router(productos.router)
+
 
 # --- EVENTO DE INICIALIZACIÓN: Carga la lista inicial en PostgreSQL ---
 @app.on_event("startup")
 def cargar_productos_iniciales():
     db = SessionLocal()
     try:
-        if db.query(models.Producto).count() == 0:
-            productos_db = [
+        productos_existentes = db.query(models.Producto).count()
+        if productos_existentes < 5:
+            nuevos_productos = [
                 models.Producto(
                     nombre="Chocotorta Familiar",
                     precio_final=12000.0,
@@ -63,11 +72,43 @@ def cargar_productos_iniciales():
                     garantia_meses=0,
                     stock=20,
                 ),
+                models.Producto(
+                    nombre="Lemon Pie Artesanal",
+                    precio_final=9500.0,
+                    cuotas_cantidad=1,
+                    cuotas_valor=9500.0,
+                    garantia_meses=0,
+                    stock=12,
+                ),
+                models.Producto(
+                    nombre="Cheesecake de Frutos Rojos",
+                    precio_final=13000.0,
+                    cuotas_cantidad=3,
+                    cuotas_valor=4333.33,
+                    garantia_meses=0,
+                    stock=8,
+                ),
+                models.Producto(
+                    nombre="Pastafrola Tradicional de Membrillo",
+                    precio_final=5500.0,
+                    cuotas_cantidad=1,
+                    cuotas_valor=5500.0,
+                    garantia_meses=0,
+                    stock=18,
+                ),
             ]
-            db.add_all(productos_db)
+            if productos_existentes == 0:
+                db.add_all(nuevos_productos)
+            else:
+                # Agregar solo los que no existan por nombre
+                nombres_existentes = {p.nombre for p in db.query(models.Producto.nombre).all()}
+                for prod in nuevos_productos:
+                    if prod.nombre not in nombres_existentes:
+                        db.add(prod)
             db.commit()
     finally:
         db.close()
+
 
 # --- ENDPOINT RAÍZ (Información General y Marco Legal) ---
 @app.get("/", tags=["General"])
@@ -91,25 +132,12 @@ async def read_root():
     }
     return JSONResponse(status_code=200, content=content)
 
-# --- ENDPOINTS PRODUCTOS ---
-@app.get("/productos", response_model=list[schemas.ProductoOut], tags=["Productos"])
-def listar_productos(
-    skip: int = 0,
-    limit: int = 10,
-    nombre: str | None = None,
-    precio_max: float | None = None,
-    db: Session = Depends(get_db)
-):
-    return productos_service.listar_productos(db, skip=skip, limit=limit, nombre=nombre, precio_max=precio_max)
-
-@app.post("/productos", response_model=schemas.ProductoOut, status_code=201, tags=["Productos"])
-def crear_producto(producto: schemas.ProductoCreate, db: Session = Depends(get_db)):
-    return productos_service.crear_producto(db, producto)
 
 # --- ENDPOINTS PEDIDOS (Para la perspectiva del comprador) ---
 @app.post("/pedidos", response_model=schemas.PedidoOut, status_code=201, tags=["Pedidos"])
 def crear_pedido(pedido: schemas.PedidoCreate, db: Session = Depends(get_db)):
     return pedidos_service.crear_pedido(db, pedido)
+
 
 @app.post("/pedidos/{id}/cancelar", response_model=schemas.PedidoOut, tags=["Pedidos"])
 def cancelar_pedido(id: int, db: Session = Depends(get_db)):

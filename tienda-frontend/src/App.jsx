@@ -1,18 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { getWelcomeInfo, getProductos, createProducto, crearPedido, cancelarPedido } from './services/api';
+import { getWelcomeInfo, createProducto, crearPedido, cancelarPedido } from './services/api';
 import Catalogo from './pages/Catalogo';
 
 function App() {
-  const [productos, setProductos] = useState([]);
   const [welcomeInfo, setWelcomeInfo] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
-
-  // Paginación y Filtros
-  const [skip, setSkip] = useState(0);
-  const [limit] = useState(6); // 6 productos por página es excelente para el diseño
-  const [filtroNombre, setFiltroNombre] = useState('');
-  const [filtroPrecioMax, setFiltroPrecioMax] = useState('');
+  const [catalogoKey, setCatalogoKey] = useState(0);
 
   // Formulario de Producto (Modo Admin)
   const [nuevoProd, setNuevoProd] = useState({
@@ -46,15 +40,12 @@ function App() {
   const [compraId, setCompraId] = useState('');
   const [arrepentimientoEnviado, setArrepentimientoEnviado] = useState(false);
 
-  // Cargar datos al montar y cuando cambien filtros o paginación
+  // Cargar datos al montar y cuando sea necesario refrescar
   const cargarDatos = async () => {
     try {
-      const [info, listaProds] = await Promise.all([
-        getWelcomeInfo(),
-        getProductos(skip, limit, filtroNombre, filtroPrecioMax)
-      ]);
+      const info = await getWelcomeInfo();
       setWelcomeInfo(info);
-      setProductos(listaProds);
+      setCatalogoKey((k) => k + 1);
     } catch (err) {
       console.error(err);
       setError("No se pudo establecer conexión con el backend de FastAPI. Asegurate de que esté corriendo en el puerto 8000.");
@@ -65,7 +56,7 @@ function App() {
 
   useEffect(() => {
     cargarDatos();
-  }, [skip, filtroNombre, filtroPrecioMax]);
+  }, []);
 
   // Manejar agregar al carrito
   const handleAddToCart = (producto) => {
@@ -226,7 +217,7 @@ function App() {
     }
   };
 
-  if (cargando && productos.length === 0) {
+  if (cargando && !welcomeInfo) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: 'var(--bg-primary)', flexDirection: 'column', gap: '1rem' }}>
         <div style={{ width: '40px', height: '40px', border: '4px solid var(--color-border)', borderTopColor: 'var(--color-primary)', borderRadius: '50%', animation: 'fadeIn 1s infinite linear' }} className="spinner"></div>
@@ -291,68 +282,9 @@ function App() {
       {/* Main Grid */}
       <main className="main-content" style={{ gridTemplateColumns: modoAdmin ? '2fr 1fr' : '1fr' }}>
         
-        {/* Productos, Buscadores y Paginación */}
+        {/* Catálogo de Productos con Paginación y Buscador */}
         <div className="catalog-container">
-          
-          {/* Barra de Filtros en Tiempo Real */}
-          <div className="filters-bar">
-            <div className="filter-group">
-              <label className="filter-label" htmlFor="filter-nombre">🔍 Buscar postre:</label>
-              <input
-                id="filter-nombre"
-                type="text"
-                className="filter-input"
-                placeholder="Ej. Chocotorta..."
-                value={filtroNombre}
-                onChange={(e) => {
-                  setFiltroNombre(e.target.value);
-                  setSkip(0); // Volver a la primera página al filtrar
-                }}
-              />
-            </div>
-            
-            <div className="filter-group">
-              <label className="filter-label" htmlFor="filter-precio">💰 Precio máximo ($):</label>
-              <input
-                id="filter-precio"
-                type="number"
-                className="filter-input"
-                placeholder="Ej. 10000"
-                value={filtroPrecioMax}
-                onChange={(e) => {
-                  setFiltroPrecioMax(e.target.value);
-                  setSkip(0); // Volver a la primera página al filtrar
-                }}
-              />
-            </div>
-          </div>
-
-          <Catalogo productos={productos} setProductos={setProductos} onAddToCart={handleAddToCart} />
-          
-          {/* Controles de Paginación */}
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginTop: '2rem' }}>
-            <button 
-              className="btn btn-secondary" 
-              style={{ width: 'auto', padding: '0.5rem 1.5rem' }}
-              disabled={skip === 0} 
-              onClick={() => setSkip((prev) => Math.max(0, prev - limit))}
-              id="btn-page-prev"
-            >
-              Anterior
-            </button>
-            <span style={{ fontWeight: '600', color: 'var(--color-text)' }} id="page-indicator">
-              Página {Math.floor(skip / limit) + 1}
-            </span>
-            <button 
-              className="btn btn-secondary" 
-              style={{ width: 'auto', padding: '0.5rem 1.5rem' }}
-              disabled={productos.length < limit} 
-              onClick={() => setSkip((prev) => prev + limit)}
-              id="btn-page-next"
-            >
-              Siguiente
-            </button>
-          </div>
+          <Catalogo key={catalogoKey} onAddToCart={handleAddToCart} />
         </div>
 
         {/* Formulario Agregar (Visible solo en Modo Admin) */}

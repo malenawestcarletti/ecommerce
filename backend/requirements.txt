@@ -3,3 +3,4 @@ uvicorn>=0.28.0
 sqlalchemy
 psycopg2-binary
 alembic
+pydantic-settings

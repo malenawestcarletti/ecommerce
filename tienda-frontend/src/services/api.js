@@ -1,4 +1,4 @@
-const API_URL = "/api";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 /**
  * Obtiene el mensaje de bienvenida y el marco legal (Ley 24.240) del root.
@@ -12,22 +12,15 @@ export async function getWelcomeInfo() {
 }
 
 /**
- * Obtiene la lista completa de productos con paginación y filtros opcionales.
+ * Obtiene la lista de productos con paginación y filtro por nombre.
  */
-export async function getProductos(skip = 0, limit = 100, nombre = "", precioMax = "") {
-  let url = `${API_URL}/productos?skip=${skip}&limit=${limit}`;
-  if (nombre) {
-    url += `&nombre=${encodeURIComponent(nombre)}`;
-  }
-  if (precioMax) {
-    url += `&precio_max=${encodeURIComponent(precioMax)}`;
-  }
-  
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error("Error al obtener la lista de productos.");
-  }
-  return response.json();
+export async function getProductos({ page = 0, limit = 6, nombre = "" } = {}) {
+  const params = new URLSearchParams({ skip: page * limit, limit });
+  if (nombre) params.append("nombre", nombre);
+
+  const respuesta = await fetch(`${API_URL}/productos?${params}`);
+  if (!respuesta.ok) throw new Error("Error al consultar el backend");
+  return respuesta.json();
 }
 
 /**
