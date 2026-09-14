@@ -8,6 +8,9 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Dulce Vicio - E-Commerce API"
     DATABASE_URL: str = "postgresql://postgres:admin@localhost:5432/postgres"
     CORS_ORIGINS: List[str] = ["*"]
+    SECRET_KEY: str = "dulcevicio-secret-key-super-secure-token-argentina-24240"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
 
     model_config = SettingsConfigDict(
         env_file=".env",

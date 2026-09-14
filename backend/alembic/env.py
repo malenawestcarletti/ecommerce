@@ -19,7 +19,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app.core.database import Base
-from app.models import Usuario, Producto, Pedido, ItemPedido
+from app.models import Usuario, Producto, Pedido, ItemPedido, SolicitudRevocacion
 
 target_metadata = Base.metadata
 

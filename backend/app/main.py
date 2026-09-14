@@ -1,23 +1,19 @@
-from fastapi import Depends, FastAPI
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.db.database import Base, SessionLocal, engine
 from app.db import models
-from app import schemas
-from app.dependencies import get_db
-from app.routers import productos
-from app.services import pedidos as pedidos_service
+from app.routers import productos, auth, pedidos, usuarios
 
 # Crea las tablas en PostgreSQL si no existen al iniciar la app
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    description="Servidor Backend para Dulce Vicio. Cumple con la Ley N° 24.240 de Defensa del Consumidor.",
-    version="0.1.0",
+    description="Servidor Backend para Dulce Vicio. Cumple con la Ley N° 24.240 de Defensa del Consumidor y Disposición 954/2025.",
+    version="0.2.0",
 )
 
 app.add_middleware(
@@ -28,8 +24,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Monta el router modular de productos
+# Monta los routers modulares
+app.include_router(auth.router)
 app.include_router(productos.router)
+app.include_router(pedidos.router)
+app.include_router(usuarios.router)
 
 
 # --- EVENTO DE INICIALIZACIÓN: Carga la lista inicial en PostgreSQL ---
@@ -100,7 +99,6 @@ def cargar_productos_iniciales():
             if productos_existentes == 0:
                 db.add_all(nuevos_productos)
             else:
-                # Agregar solo los que no existan por nombre
                 nombres_existentes = {p.nombre for p in db.query(models.Producto.nombre).all()}
                 for prod in nuevos_productos:
                     if prod.nombre not in nombres_existentes:
@@ -120,25 +118,13 @@ async def read_root():
             "regulacion_principal": "Ley N° 24.240 de Defensa del Consumidor",
             "detalles": (
                 "Esta plataforma de comercio electrónico cumple plenamente con los derechos de las y los consumidores "
-                "conforme a lo establecido en la Ley N° 24.240 de la República Argentina. Garantizamos el derecho a la "
-                "información clara y detallada, el trato digno, la protección de tus datos y el derecho de revocación "
-                "(botón de arrepentimiento) dentro del plazo legal de 10 días corridos desde la entrega del producto "
-                "o la firma del contrato (Art. 34 de la Ley 24.240)."
+                "conforme a lo establecido en la Ley N° 24.240 de la República Argentina y la Disposición 954/2025. "
+                "Garantizamos el derecho a la información clara y detallada, el trato digno, la protección y portabilidad de tus datos, "
+                "y el derecho de revocación (botón de arrepentimiento) dentro del plazo legal de 10 días corridos."
             ),
             "enlace_util": "https://www.argentina.gob.ar/normativa/nacional/ley-24240-638",
         },
         "estado": "Operativo",
-        "version": "0.1.0",
+        "version": "0.2.0",
     }
     return JSONResponse(status_code=200, content=content)
-
-
-# --- ENDPOINTS PEDIDOS (Para la perspectiva del comprador) ---
-@app.post("/pedidos", response_model=schemas.PedidoOut, status_code=201, tags=["Pedidos"])
-def crear_pedido(pedido: schemas.PedidoCreate, db: Session = Depends(get_db)):
-    return pedidos_service.crear_pedido(db, pedido)
-
-
-@app.post("/pedidos/{id}/cancelar", response_model=schemas.PedidoOut, tags=["Pedidos"])
-def cancelar_pedido(id: int, db: Session = Depends(get_db)):
-    return pedidos_service.cancelar_pedido(db, id)

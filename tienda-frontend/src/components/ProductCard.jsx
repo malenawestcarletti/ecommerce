@@ -1,6 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useCarrito } from '../context/CarritoContext';
 
 export default function ProductCard({ producto, onAddToCart }) {
+  const { agregar } = useCarrito();
+  const [agregado, setAgregado] = useState(false);
+
   // Helper para dar formato de moneda argentina
   const formatearMoneda = (valor) => {
     return new Intl.NumberFormat('es-AR', {
@@ -8,6 +12,16 @@ export default function ProductCard({ producto, onAddToCart }) {
       currency: 'ARS',
       minimumFractionDigits: 2
     }).format(valor);
+  };
+
+  const handleAgregar = () => {
+    if (onAddToCart) {
+      onAddToCart(producto);
+    } else {
+      agregar(producto, 1);
+    }
+    setAgregado(true);
+    setTimeout(() => setAgregado(false), 1200);
   };
 
   return (
@@ -35,12 +49,19 @@ export default function ProductCard({ producto, onAddToCart }) {
 
         <button 
           className="btn btn-secondary" 
-          style={{ marginTop: '1rem', width: '100%' }} 
+          style={{
+            marginTop: '1rem',
+            width: '100%',
+            backgroundColor: agregado ? 'var(--color-success)' : undefined,
+            color: agregado ? '#fff' : undefined,
+            borderColor: agregado ? 'var(--color-success)' : undefined,
+            transition: 'all 0.2s ease'
+          }} 
           id={`btn-add-cart-${producto.id}`}
-          onClick={() => onAddToCart && onAddToCart(producto)}
+          onClick={handleAgregar}
           disabled={producto.stock <= 0}
         >
-          {producto.stock > 0 ? 'Agregar al carrito' : 'Sin Stock'}
+          {producto.stock <= 0 ? 'Sin Stock' : agregado ? '¡Agregado! ✓' : 'Agregar al carrito'}
         </button>
       </div>
     </article>
