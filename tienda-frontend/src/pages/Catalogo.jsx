@@ -25,6 +25,10 @@ export default function Catalogo({ onAddToCart }) {
       });
   }, [page, busqueda]);
 
+  const handleProductUpdated = (updated) => {
+    setProductos((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+  };
+
   return (
     <section id="catalogo">
       <h2 className="section-title">Nuestras Delicias</h2>
@@ -59,9 +63,15 @@ export default function Catalogo({ onAddToCart }) {
         <div className="products-grid">
           {productos.length > 0 ? (
             productos.map((prod) => (
-              <ProductCard key={prod.id} producto={prod} onAddToCart={onAddToCart} />
+              <ProductCard
+                key={prod.id}
+                producto={prod}
+                onAddToCart={onAddToCart}
+                onProductUpdated={handleProductUpdated}
+              />
             ))
           ) : (
+
             <p style={{ fontStyle: "italic", color: "var(--color-text-light)", gridColumn: "1 / -1", textAlign: "center" }}>
               No hay productos disponibles en este momento.
             </p>

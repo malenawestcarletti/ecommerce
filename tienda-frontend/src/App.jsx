@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { CarritoProvider } from "./context/CarritoContext";
 import { AuthProvider } from "./context/AuthContext";
@@ -14,7 +14,8 @@ import Arrepentimiento from "./pages/Arrepentimiento";
 import MisDatos from "./pages/MisDatos";
 import Login from "./pages/Login";
 
-import { getWelcomeInfo, createProducto } from "./services/api";
+import { getWelcomeInfo, createProducto, subirImagen } from "./services/api";
+
 
 function Inicio() {
   const [welcomeInfo, setWelcomeInfo] = useState(null);
@@ -32,6 +33,48 @@ function Inicio() {
   });
   const [formExito, setFormExito] = useState(false);
   const [formError, setFormError] = useState(null);
+  const [archivoFoto, setArchivoFoto] = useState(null);
+  const [previewFoto, setPreviewFoto] = useState(null);
+  const [subiendoFoto, setSubiendoFoto] = useState(false);
+  const fotoInputRef = useRef(null);
+
+  // Limpieza de memoria para preview de imagen
+  useEffect(() => {
+    return () => {
+      if (previewFoto) {
+        URL.revokeObjectURL(previewFoto);
+      }
+    };
+  }, [previewFoto]);
+
+  const handleSeleccionarFoto = (e) => {
+    setFormError(null);
+    const file = e.target.files?.[0];
+    if (!file) {
+      setArchivoFoto(null);
+      setPreviewFoto(null);
+      return;
+    }
+
+    if (!file.type || !file.type.startsWith("image/")) {
+      setFormError("El archivo seleccionado debe ser una imagen válida (JPG, PNG, WebP).");
+      if (fotoInputRef.current) fotoInputRef.current.value = "";
+      setArchivoFoto(null);
+      setPreviewFoto(null);
+      return;
+    }
+
+    if (file.size >= 2 * 1024 * 1024) {
+      setFormError("El archivo excede el tamaño máximo permitido de 2 MB.");
+      if (fotoInputRef.current) fotoInputRef.current.value = "";
+      setArchivoFoto(null);
+      setPreviewFoto(null);
+      return;
+    }
+
+    setArchivoFoto(file);
+    setPreviewFoto(URL.createObjectURL(file));
+  };
 
   useEffect(() => {
     getWelcomeInfo()
@@ -64,9 +107,10 @@ function Inicio() {
     }
 
     const valorCuota = parseFloat((precioNum / cuotasNum).toFixed(2));
+    setSubiendoFoto(true);
 
     try {
-      await createProducto({
+      const prodCreado = await createProducto({
         nombre: nuevoProd.nombre.trim(),
         precio_final: precioNum,
         cuotas_cantidad: cuotasNum,
@@ -74,6 +118,12 @@ function Inicio() {
         garantia_meses: garantiaNum,
         stock: stockNum,
       });
+
+      // Si seleccionó una imagen, subirla inmediatamente al endpoint de imágenes
+      if (archivoFoto && prodCreado?.id) {
+        await subirImagen(prodCreado.id, archivoFoto);
+      }
+
       setFormExito(true);
       setNuevoProd({
         nombre: "",
@@ -82,11 +132,19 @@ function Inicio() {
         garantia_meses: 0,
         stock: "",
       });
+      setArchivoFoto(null);
+      setPreviewFoto(null);
+      if (fotoInputRef.current) {
+        fotoInputRef.current.value = "";
+      }
       setCatalogoKey((k) => k + 1);
     } catch (err) {
       setFormError(err.message || "Error al registrar el producto.");
+    } finally {
+      setSubiendoFoto(false);
     }
   };
+
 
   return (
     <>
@@ -208,6 +266,31 @@ function Inicio() {
                 />
               </div>
 
+              <div className="form-group">
+                <label className="form-label" htmlFor="input-foto-nuevo">Foto del Postre (Opcional, JPG/PNG &lt; 2 MB)</label>
+                <input
+                  id="input-foto-nuevo"
+                  type="file"
+                  accept="image/*"
+                  ref={fotoInputRef}
+                  onChange={handleSeleccionarFoto}
+                  disabled={subiendoFoto}
+                  className="form-input"
+                />
+              </div>
+
+              {previewFoto && (
+                <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1rem", padding: "0.5rem", background: "var(--bg-secondary)", borderRadius: "8px", border: "1px solid var(--color-border)" }}>
+                  <div style={{ width: "64px", height: "64px", borderRadius: "6px", overflow: "hidden", flexShrink: 0 }} className="aspect-square">
+                    <img src={previewFoto} alt="Vista previa del nuevo postre" className="object-cover" />
+                  </div>
+                  <div style={{ fontSize: "0.8rem", color: "var(--color-text-light)" }}>
+                    <strong style={{ color: "var(--color-text)", display: "block" }}>{archivoFoto?.name}</strong>
+                    <span>{(archivoFoto?.size ? archivoFoto.size / 1024 : 0).toFixed(1)} KB</span>
+                  </div>
+                </div>
+              )}
+
               {formError && (
                 <p style={{ color: "var(--color-error)", fontSize: "0.9rem", margin: "0.5rem 0" }}>
                   ⚠️ {formError}
@@ -219,8 +302,8 @@ function Inicio() {
                 </p>
               )}
 
-              <button type="submit" className="btn" style={{ marginTop: "1rem" }}>
-                Registrar Postre
+              <button type="submit" className="btn" disabled={subiendoFoto} style={{ marginTop: "1rem" }}>
+                {subiendoFoto ? "Subiendo..." : "Registrar Postre"}
               </button>
             </form>
           </section>

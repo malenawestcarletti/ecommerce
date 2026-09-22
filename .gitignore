@@ -16,3 +16,7 @@ htmlcov/
 .env
 .env.*
 !.env.example
+
+# Uploads directory
+uploads/
+

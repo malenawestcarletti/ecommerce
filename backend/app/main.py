@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+import os
 
 from app.core.config import settings
 from app.db.database import Base, SessionLocal, engine
@@ -9,6 +11,9 @@ from app.routers import productos, auth, pedidos, usuarios
 
 # Crea las tablas en PostgreSQL si no existen al iniciar la app
 Base.metadata.create_all(bind=engine)
+
+# Asegura que la carpeta uploads/productos exista
+os.makedirs("uploads/productos", exist_ok=True)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -24,11 +29,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Montaje de archivos estáticos para servicio de imágenes de productos
+app.mount("/static", StaticFiles(directory="uploads"), name="static")
+
 # Monta los routers modulares
 app.include_router(auth.router)
 app.include_router(productos.router)
 app.include_router(pedidos.router)
 app.include_router(usuarios.router)
+
 
 
 # --- EVENTO DE INICIALIZACIÓN: Carga la lista inicial en PostgreSQL ---

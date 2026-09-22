@@ -36,14 +36,21 @@ export async function manejarRespuesta(res) {
     throw new Error(
       errorDetail || "Tu sesión ha vencido. Por favor, volvé a iniciar sesión."
     );
+  } else if (res.status === 403) {
+    throw new Error(errorDetail || "No autorizado / No sos admin");
+  } else if (res.status === 404) {
+    throw new Error(errorDetail || "Producto no encontrado");
   } else if (res.status === 409) {
     throw new Error(errorDetail || "Conflicto al procesar la solicitud con el estado actual.");
-  } else if (res.status === 404) {
-    throw new Error(errorDetail || "El recurso solicitado no fue encontrado.");
+  } else if (res.status === 413) {
+    throw new Error(errorDetail || "Archivo excede 2 MB");
+  } else if (res.status === 415) {
+    throw new Error(errorDetail || "El archivo no es una imagen permitida");
   } else {
     throw new Error(errorDetail || "Ocurrió un error inesperado al comunicarse con el servidor.");
   }
 }
+
 
 /**
  * Información de bienvenida y marco legal (Ley 24.240 y Disposición 954/2025)
@@ -70,11 +77,12 @@ export async function getProductos({ page = 0, limit = 6, nombre = "" } = {}) {
 export async function createProducto(productoData) {
   const response = await fetch(`${API_URL}/productos`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders(),
     body: JSON.stringify(productoData),
   });
   return manejarRespuesta(response);
 }
+
 
 /**
  * Confirmar Pedido (Checkout).
@@ -196,3 +204,29 @@ export async function getPerfilActual() {
   });
   return manejarRespuesta(response);
 }
+
+/**
+ * Subida de imagen para un producto (Admin)
+ * Envía el archivo bajo la clave 'archivo' en FormData con Bearer token.
+ * IMPORTANTE: NO incluye cabecera Content-Type para que el navegador configure
+ * el boundary multipart automáticamente.
+ */
+export async function subirImagen(productoId, archivo) {
+  const token = localStorage.getItem("access_token");
+  const headers = {};
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const formData = new FormData();
+  formData.append("archivo", archivo);
+
+  const response = await fetch(`${API_URL}/productos/${productoId}/imagen`, {
+    method: "POST",
+    headers,
+    body: formData,
+  });
+
+  return manejarRespuesta(response);
+}
+

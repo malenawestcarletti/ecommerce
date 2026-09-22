@@ -30,6 +30,7 @@ class Producto(Base):
     cuotas_valor = Column(Float)
     garantia_meses = Column(Integer, default=0)
     stock = Column(Integer, default=0)
+    imagen_url = Column(String, nullable=True)
 
 
 class Pedido(Base):

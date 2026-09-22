@@ -12,3 +12,6 @@ ENV/
 __pycache__/
 *.py[cod]
 *$py.class
+
+# Uploads directory
+uploads/

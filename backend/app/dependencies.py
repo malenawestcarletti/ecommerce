@@ -61,3 +61,15 @@ def get_current_user(
         )
 
     return usuario
+
+
+# Dependencia para requerir permisos de administrador
+def require_admin(
+    current_user: models.Usuario = Depends(get_current_user)
+) -> models.Usuario:
+    if current_user.rol != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No autorizado / No sos admin",
+        )
+    return current_user
