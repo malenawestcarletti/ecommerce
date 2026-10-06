@@ -38,7 +38,11 @@ export default function Login() {
           consentimiento: true,
         });
       } else {
-        await login(email.trim().toLowerCase(), password);
+        const resp = await login(email.trim().toLowerCase(), password);
+        if (resp?.usuario?.rol === "admin" || email.trim().toLowerCase() === "dulcevicio@gmail.com") {
+          navigate(redirectPath !== "/" ? redirectPath : "/admin");
+          return;
+        }
       }
       navigate(redirectPath);
     } catch (err) {

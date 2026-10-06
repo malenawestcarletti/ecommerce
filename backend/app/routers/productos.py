@@ -87,3 +87,19 @@ async def subir_imagen_producto(
 
     return producto
 
+
+@router.delete("/{id}", status_code=status.HTTP_200_OK)
+def eliminar_producto_endpoint(
+    id: int,
+    db: Session = Depends(get_db),
+    admin: models.Usuario = Depends(require_admin)
+):
+    prod = productos_service.eliminar_producto(db, id)
+    if not prod:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Producto no encontrado"
+        )
+    return {"mensaje": f"Producto '{prod.nombre}' eliminado exitosamente.", "id": id}
+
+

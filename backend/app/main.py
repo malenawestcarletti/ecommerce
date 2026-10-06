@@ -1,13 +1,29 @@
+from multiprocessing import context
+from multiprocessing import context
+from multiprocessing import context
+from multiprocessing import context
+from alembic import context
+from alembic import context
+from app.dependencies import get_db
+from fastapi import Depends
+from sqlalchemy.orm import Session
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 import os
+from datetime import datetime, timezone
 
 from app.core.config import settings
+from app.core.security import get_password_hash
 from app.db.database import Base, SessionLocal, engine
 from app.db import models
 from app.routers import productos, auth, pedidos, usuarios
+from sqlalchemy import text
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+from fastapi import Depends
+
 
 # Crea las tablas en PostgreSQL si no existen al iniciar la app
 Base.metadata.create_all(bind=engine)
@@ -40,8 +56,43 @@ app.include_router(usuarios.router)
 
 
 
-# --- EVENTO DE INICIALIZACIÓN: Carga la lista inicial en PostgreSQL ---
+def asegurar_admin_dulcevicio():
+    db = SessionLocal()
+    try:
+        email_admin = "dulcevicio@gmail.com"
+        admin = db.query(models.Usuario).filter(models.Usuario.email == email_admin).first()
+        if not admin:
+            nuevo_admin = models.Usuario(
+                nombre="Administrador Dulce Vicio",
+                email=email_admin,
+                password_hash=get_password_hash("dulc3"),
+                rol="admin",
+                activo=True,
+                fecha_consentimiento=datetime.now(timezone.utc),
+            )
+            db.add(nuevo_admin)
+            db.commit()
+            print("Usuario Administrador dulcevicio@gmail.com creado con éxito.")
+        else:
+            admin.rol = "admin"
+            admin.password_hash = get_password_hash("dulc3")
+            admin.activo = True
+            db.commit()
+            print("Usuario Administrador dulcevicio@gmail.com verificado y actualizado.")
+    except Exception as e:
+        db.rollback()
+        print(f"Error al asegurar usuario admin: {e}")
+    finally:
+        db.close()
+
+
+# --- EVENTO DE INICIALIZACIÓN: Carga la lista inicial en PostgreSQL y asegura admin ---
 @app.on_event("startup")
+def startup_event():
+    asegurar_admin_dulcevicio()
+    cargar_productos_iniciales()
+
+
 def cargar_productos_iniciales():
     db = SessionLocal()
     try:
@@ -137,3 +188,13 @@ async def read_root():
         "version": "0.2.0",
     }
     return JSONResponse(status_code=200, content=content)
+
+    Path("uploads/productos").mkdir(parents=True, exist_ok=True)
+app.mount("/static", StaticFiles(directory="uploads"), name="static")
+app.mount("/demo", StaticFiles(directory="app/static/demo"), name="demo")
+
+@app.get("/salud", tags=["Salud"])
+def salud(db: Session = Depends(get_db)):
+    db.execute(text("SELECT 1"))
+    return {"estado": "ok", "base": "ok"}
+    

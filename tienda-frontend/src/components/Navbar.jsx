@@ -36,6 +36,26 @@ export default function Navbar() {
 
             {estaAutenticado ? (
               <>
+                {(usuario?.rol === "admin" || usuario?.email?.toLowerCase() === "dulcevicio@gmail.com") && (
+                  <li>
+                    <Link
+                      to="/admin"
+                      id="nav-admin-panel"
+                      style={{
+                        fontWeight: "700",
+                        color: "var(--color-primary)",
+                        background: "rgba(214, 51, 108, 0.12)",
+                        padding: "0.35rem 0.75rem",
+                        borderRadius: "20px",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "0.3rem",
+                      }}
+                    >
+                      👑 Panel Admin
+                    </Link>
+                  </li>
+                )}
                 <li>
                   <Link to="/mis-pedidos" id="nav-mis-pedidos">
                     Mis Pedidos
@@ -62,11 +82,18 @@ export default function Navbar() {
                 </li>
               </>
             ) : (
-              <li>
-                <Link to="/login" id="nav-login" className="btn btn-secondary" style={{ padding: "0.4rem 0.9rem" }}>
-                  Ingresar
-                </Link>
-              </li>
+              <>
+                <li>
+                  <Link to="/admin" id="nav-admin-link" style={{ fontSize: "0.85rem", color: "var(--color-text-light)" }}>
+                    Admin
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/login" id="nav-login" className="btn btn-secondary" style={{ padding: "0.4rem 0.9rem" }}>
+                    Ingresar
+                  </Link>
+                </li>
+              </>
             )}
           </ul>
         </nav>

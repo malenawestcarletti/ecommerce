@@ -1,7 +1,7 @@
 from typing import List
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
-from app.dependencies import get_db, get_current_user
+from app.dependencies import get_db, get_current_user, require_admin
 from app.db import models
 from app.schemas.pedido import PedidoCreate, PedidoOut, RevocacionResponse
 from app.services import pedido_service, revocacion_service
@@ -17,6 +17,15 @@ def crear_pedido_endpoint(
     db: Session = Depends(get_db)
 ):
     return pedido_service.crear_pedido(db, usuario, datos)
+
+
+# Endpoint para administradores: ver todas las compras realizadas en la plataforma
+@router.get("/admin/todos", response_model=List[PedidoOut])
+def listar_todos_los_pedidos_admin(
+    admin: models.Usuario = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    return pedido_service.obtener_todos_los_pedidos(db)
 
 
 # IMPORTANTE: /mios DEBE estar declarado ANTES que /{pedido_id}

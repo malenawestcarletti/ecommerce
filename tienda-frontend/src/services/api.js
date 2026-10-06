@@ -106,6 +106,24 @@ export async function crearPedido(items) {
   return manejarRespuesta(response);
 }
 
+export async function eliminarProducto(productoId) {
+  const response = await fetch(`${API_URL}/productos/${productoId}`, {
+    method: "DELETE",
+    headers: authHeaders(),
+  });
+  return manejarRespuesta(response);
+}
+
+/**
+ * Obtener todas las compras hechas por todos los usuarios (Vista Administrador)
+ */
+export async function getTodosLosPedidosAdmin() {
+  const response = await fetch(`${API_URL}/pedidos/admin/todos`, {
+    headers: authHeaders(),
+  });
+  return manejarRespuesta(response);
+}
+
 /**
  * Obtener historial de pedidos del usuario autenticado
  */

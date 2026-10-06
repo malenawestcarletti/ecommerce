@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Dulce Vicio - E-Commerce API"
-    DATABASE_URL: str = "postgresql://postgres:admin@localhost:5432/postgres"
+    DATABASE_URL: str = "postgresql+pg8000://postgres:admin@localhost:5432/postgres"
     CORS_ORIGINS: List[str] = ["*"]
     SECRET_KEY: str = "dulcevicio-secret-key-super-secure-token-argentina-24240"
     ALGORITHM: str = "HS256"

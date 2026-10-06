@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Link } from "react-router-dom";
 import { CarritoProvider } from "./context/CarritoContext";
 import { AuthProvider } from "./context/AuthContext";
 
@@ -13,6 +13,7 @@ import MisPedidos from "./pages/MisPedidos";
 import Arrepentimiento from "./pages/Arrepentimiento";
 import MisDatos from "./pages/MisDatos";
 import Login from "./pages/Login";
+import AdminPanel from "./pages/AdminPanel";
 
 import { getWelcomeInfo, createProducto, subirImagen } from "./services/api";
 
@@ -310,15 +311,22 @@ function Inicio() {
         )}
       </main>
 
-      {/* Botón para alternar modo admin */}
-      <div style={{ textAlign: "center", margin: "1rem 0" }}>
+      {/* Enlace al Panel de Administrador */}
+      <div style={{ textAlign: "center", margin: "1.5rem 0", display: "flex", justifyContent: "center", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+        <Link
+          to="/admin"
+          className="btn btn-secondary"
+          style={{ width: "auto", padding: "0.55rem 1.25rem", fontSize: "0.9rem", display: "inline-flex", alignItems: "center", gap: "0.5rem" }}
+          id="btn-acceder-panel-admin"
+        >
+          👑 Panel de Administrador Completo
+        </Link>
         <button
           onClick={() => setModoAdmin(!modoAdmin)}
-          className="admin-toggle-link"
           style={{ background: "none", border: "none", color: "var(--color-text-light)", textDecoration: "underline", cursor: "pointer", fontSize: "0.85rem" }}
           id="btn-toggle-admin-mode"
         >
-          {modoAdmin ? "🔒 Vista Comprador" : "🛠️ Panel de Carga de Productos"}
+          {modoAdmin ? "🔒 Ocultar formulario rápido" : "⚡ Carga rápida en inicio"}
         </button>
       </div>
 
@@ -363,6 +371,7 @@ function App() {
                 <Route path="/carrito" element={<Carrito />} />
                 <Route path="/arrepentimiento" element={<Arrepentimiento />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/admin" element={<AdminPanel />} />
 
                 {/* Rutas Protegidas */}
                 <Route

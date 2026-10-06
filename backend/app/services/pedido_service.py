@@ -84,3 +84,12 @@ def obtener_pedido_por_id(db: Session, usuario: models.Usuario, pedido_id: int) 
             detail=f"Pedido {pedido_id} no encontrado o no pertenece a tu cuenta."
         )
     return pedido
+
+
+def obtener_todos_los_pedidos(db: Session) -> list[models.Pedido]:
+    return (
+        db.query(models.Pedido)
+        .order_by(models.Pedido.creado_en.desc())
+        .all()
+    )
+

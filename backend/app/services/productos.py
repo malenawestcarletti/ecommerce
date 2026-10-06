@@ -22,3 +22,15 @@ def listar_productos(
     if precio_max is not None:
         query = query.filter(models.Producto.precio_final <= precio_max)
     return query.offset(skip).limit(limit).all()
+
+
+def eliminar_producto(db: Session, id: int):
+    prod = db.query(models.Producto).filter(models.Producto.id == id).first()
+    if not prod:
+        return None
+    # Desvincular de items_pedido existentes para mantener histórico sin fallar por clave foránea
+    db.query(models.ItemPedido).filter(models.ItemPedido.producto_id == id).update({"producto_id": None})
+    db.delete(prod)
+    db.commit()
+    return prod
+
