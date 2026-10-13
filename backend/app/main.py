@@ -1,35 +1,26 @@
-from multiprocessing import context
-from multiprocessing import context
-from multiprocessing import context
-from multiprocessing import context
-from alembic import context
-from alembic import context
-from app.dependencies import get_db
-from fastapi import Depends
-from sqlalchemy.orm import Session
-from fastapi import FastAPI
+from datetime import datetime, timezone
+from pathlib import Path
+
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-import os
-from datetime import datetime, timezone
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.security import get_password_hash
-from app.db.database import Base, SessionLocal, engine
 from app.db import models
-from app.routers import productos, auth, pedidos, usuarios
-from sqlalchemy import text
-from sqlalchemy import text
-from sqlalchemy.orm import Session
-from fastapi import Depends
+from app.db.database import Base, SessionLocal, engine
+from app.dependencies import get_db
+from app.routers import auth, pedidos, productos, usuarios
 
+# Asegura que las carpetas requeridas existan
+Path("uploads/productos").mkdir(parents=True, exist_ok=True)
+Path("app/static/demo").mkdir(parents=True, exist_ok=True)
 
 # Crea las tablas en PostgreSQL si no existen al iniciar la app
 Base.metadata.create_all(bind=engine)
-
-# Asegura que la carpeta uploads/productos exista
-os.makedirs("uploads/productos", exist_ok=True)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -45,15 +36,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Montaje de archivos estáticos para servicio de imágenes de productos
+# Montaje de archivos estáticos para subidas y demos
 app.mount("/static", StaticFiles(directory="uploads"), name="static")
+app.mount("/demo", StaticFiles(directory="app/static/demo"), name="demo")
 
 # Monta los routers modulares
 app.include_router(auth.router)
 app.include_router(productos.router)
 app.include_router(pedidos.router)
 app.include_router(usuarios.router)
-
 
 
 def asegurar_admin_dulcevicio():
@@ -97,73 +88,88 @@ def cargar_productos_iniciales():
     db = SessionLocal()
     try:
         productos_existentes = db.query(models.Producto).count()
-        if productos_existentes < 5:
-            nuevos_productos = [
-                models.Producto(
-                    nombre="Chocotorta Familiar",
-                    precio_final=12000.0,
-                    cuotas_cantidad=3,
-                    cuotas_valor=4000.0,
-                    garantia_meses=0,
-                    stock=15,
-                ),
-                models.Producto(
-                    nombre="Tiramisú Clásico",
-                    precio_final=10500.0,
-                    cuotas_cantidad=3,
-                    cuotas_valor=3500.0,
-                    garantia_meses=0,
-                    stock=10,
-                ),
-                models.Producto(
-                    nombre="Box de Brownies (6 unidades)",
-                    precio_final=8000.0,
-                    cuotas_cantidad=1,
-                    cuotas_valor=8000.0,
-                    garantia_meses=0,
-                    stock=25,
-                ),
-                models.Producto(
-                    nombre="Turrón de Quaker Tradicional",
-                    precio_final=6500.0,
-                    cuotas_cantidad=1,
-                    cuotas_valor=6500.0,
-                    garantia_meses=0,
-                    stock=20,
-                ),
-                models.Producto(
-                    nombre="Lemon Pie Artesanal",
-                    precio_final=9500.0,
-                    cuotas_cantidad=1,
-                    cuotas_valor=9500.0,
-                    garantia_meses=0,
-                    stock=12,
-                ),
-                models.Producto(
-                    nombre="Cheesecake de Frutos Rojos",
-                    precio_final=13000.0,
-                    cuotas_cantidad=3,
-                    cuotas_valor=4333.33,
-                    garantia_meses=0,
-                    stock=8,
-                ),
-                models.Producto(
-                    nombre="Pastafrola Tradicional de Membrillo",
-                    precio_final=5500.0,
-                    cuotas_cantidad=1,
-                    cuotas_valor=5500.0,
-                    garantia_meses=0,
-                    stock=18,
-                ),
-            ]
-            if productos_existentes == 0:
-                db.add_all(nuevos_productos)
-            else:
-                nombres_existentes = {p.nombre for p in db.query(models.Producto.nombre).all()}
-                for prod in nuevos_productos:
-                    if prod.nombre not in nombres_existentes:
-                        db.add(prod)
+        catalogo_demo = [
+            {
+                "nombre": "Chocotorta Familiar",
+                "precio_final": 12000.0,
+                "cuotas_cantidad": 3,
+                "cuotas_valor": 4000.0,
+                "garantia_meses": 0,
+                "stock": 15,
+                "imagen_url": "/demo/chocotorta.jpg",
+            },
+            {
+                "nombre": "Tiramisú Clásico",
+                "precio_final": 10500.0,
+                "cuotas_cantidad": 3,
+                "cuotas_valor": 3500.0,
+                "garantia_meses": 0,
+                "stock": 10,
+                "imagen_url": "/demo/tiramisu.jpg",
+            },
+            {
+                "nombre": "Box de Brownies (6 unidades)",
+                "precio_final": 8000.0,
+                "cuotas_cantidad": 1,
+                "cuotas_valor": 8000.0,
+                "garantia_meses": 0,
+                "stock": 25,
+                "imagen_url": "/demo/brownies.jpg",
+            },
+            {
+                "nombre": "Turrón de Quaker Tradicional",
+                "precio_final": 6500.0,
+                "cuotas_cantidad": 1,
+                "cuotas_valor": 6500.0,
+                "garantia_meses": 0,
+                "stock": 20,
+                "imagen_url": "/demo/turron_quaker.jpg",
+            },
+            {
+                "nombre": "Lemon Pie Artesanal",
+                "precio_final": 9500.0,
+                "cuotas_cantidad": 1,
+                "cuotas_valor": 9500.0,
+                "garantia_meses": 0,
+                "stock": 12,
+                "imagen_url": "/demo/lemon_pie.jpg",
+            },
+            {
+                "nombre": "Cheesecake de Frutos Rojos",
+                "precio_final": 13000.0,
+                "cuotas_cantidad": 3,
+                "cuotas_valor": 4333.33,
+                "garantia_meses": 0,
+                "stock": 8,
+                "imagen_url": "/demo/cheesecake.jpg",
+            },
+            {
+                "nombre": "Pastafrola Tradicional de Membrillo",
+                "precio_final": 5500.0,
+                "cuotas_cantidad": 1,
+                "cuotas_valor": 5500.0,
+                "garantia_meses": 0,
+                "stock": 18,
+                "imagen_url": "/demo/pastafrola.jpg",
+            },
+        ]
+
+        if productos_existentes == 0:
+            for item in catalogo_demo:
+                db.add(models.Producto(**item))
             db.commit()
+        else:
+            # Asegurar que los productos existentes tengan sus imágenes de demo asignadas
+            for item in catalogo_demo:
+                prod = db.query(models.Producto).filter(models.Producto.nombre == item["nombre"]).first()
+                if not prod:
+                    db.add(models.Producto(**item))
+                elif not prod.imagen_url:
+                    prod.imagen_url = item["imagen_url"]
+            db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"Error al cargar productos iniciales: {e}")
     finally:
         db.close()
 
@@ -189,12 +195,9 @@ async def read_root():
     }
     return JSONResponse(status_code=200, content=content)
 
-    Path("uploads/productos").mkdir(parents=True, exist_ok=True)
-app.mount("/static", StaticFiles(directory="uploads"), name="static")
-app.mount("/demo", StaticFiles(directory="app/static/demo"), name="demo")
 
+# --- ENDPOINT DE SALUD (Health Check para Render) ---
 @app.get("/salud", tags=["Salud"])
 def salud(db: Session = Depends(get_db)):
     db.execute(text("SELECT 1"))
     return {"estado": "ok", "base": "ok"}
-    

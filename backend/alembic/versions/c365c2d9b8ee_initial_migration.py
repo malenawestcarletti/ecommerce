@@ -31,6 +31,17 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_usuarios_email'), 'usuarios', ['email'], unique=True)
     op.create_index(op.f('ix_usuarios_id'), 'usuarios', ['id'], unique=False)
+    op.create_table('productos',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('nombre', sa.String(), nullable=False),
+    sa.Column('precio_final', sa.Float(), nullable=False),
+    sa.Column('cuotas_cantidad', sa.Integer(), nullable=True),
+    sa.Column('cuotas_valor', sa.Float(), nullable=True),
+    sa.Column('garantia_meses', sa.Integer(), nullable=True),
+    sa.Column('stock', sa.Integer(), nullable=True),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_productos_id'), 'productos', ['id'], unique=False)
     op.create_table('pedidos',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('usuario_id', sa.Integer(), nullable=True),
@@ -62,6 +73,8 @@ def downgrade() -> None:
     op.drop_table('items_pedido')
     op.drop_index(op.f('ix_pedidos_id'), table_name='pedidos')
     op.drop_table('pedidos')
+    op.drop_index(op.f('ix_productos_id'), table_name='productos')
+    op.drop_table('productos')
     op.drop_index(op.f('ix_usuarios_id'), table_name='usuarios')
     op.drop_index(op.f('ix_usuarios_email'), table_name='usuarios')
     op.drop_table('usuarios')

@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Union, Optional
 import json
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -6,10 +6,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Dulce Vicio - E-Commerce API"
-    DATABASE_URL: str = "postgresql+pg8000://postgres:admin@localhost:5432/postgres"
+    DATABASE_URL: str = "postgresql://postgres:admin@localhost:5432/postgres"
     CORS_ORIGINS: List[str] = ["*"]
     SECRET_KEY: str = "dulcevicio-secret-key-super-secure-token-argentina-24240"
     ALGORITHM: str = "HS256"
+    ACCESS_MIN: Optional[int] = 1440
+    REFRESH_MIN: Optional[int] = 10080
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
 
     model_config = SettingsConfigDict(
@@ -17,6 +19,13 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore"
     )
+
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def assemble_db_connection(cls, v: str) -> str:
+        if isinstance(v, str) and v.startswith("postgres://"):
+            return v.replace("postgres://", "postgresql://", 1)
+        return v
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
