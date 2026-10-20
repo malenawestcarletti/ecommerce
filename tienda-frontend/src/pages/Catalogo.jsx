@@ -6,11 +6,21 @@ export default function Catalogo({ onAddToCart }) {
   const [productos, setProductos] = useState([]);
   const [page, setPage] = useState(0);
   const [busqueda, setBusqueda] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [cargando, setCargando] = useState(false);
+  const [lento, setLento] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    setIsLoading(true);
+    if (!cargando) {
+      setLento(false);
+      return;
+    }
+    const t = setTimeout(() => setLento(true), 5000);
+    return () => clearTimeout(t);
+  }, [cargando]);
+
+  useEffect(() => {
+    setCargando(true);
     setError(null);
     getProductos({ page, nombre: busqueda })
       .then((data) => {
@@ -21,7 +31,7 @@ export default function Catalogo({ onAddToCart }) {
         setError("Error al consultar el backend");
       })
       .finally(() => {
-        setIsLoading(false);
+        setCargando(false);
       });
   }, [page, busqueda]);
 
@@ -47,19 +57,19 @@ export default function Catalogo({ onAddToCart }) {
         />
       </div>
 
-      {isLoading && (
-        <p style={{ fontStyle: "italic", color: "var(--color-text-light)", textAlign: "center" }}>
-          Cargando productos...
+      {cargando && (
+        <p role="status" style={{ fontStyle: "italic", color: "var(--color-text-light)", textAlign: "center" }}>
+          {lento ? "Despertando el servidor, la primera visita puede tardar un minuto…" : "Cargando productos…"}
         </p>
       )}
 
-      {error && !isLoading && (
+      {error && !cargando && (
         <p style={{ color: "red", fontWeight: "bold", textAlign: "center" }}>
           {error}
         </p>
       )}
 
-      {!isLoading && !error && (
+      {!cargando && !error && (
         <div className="products-grid">
           {productos.length > 0 ? (
             productos.map((prod) => (
