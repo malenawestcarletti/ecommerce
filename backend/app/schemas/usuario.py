@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 from typing import Optional, List, Any
 import datetime
 from app.schemas.pedido import PedidoOut, SolicitudRevocacionOut
@@ -9,6 +9,21 @@ class UsuarioCreate(BaseModel):
     email: str
     password: str
     consentimiento: bool = True
+    acepto_tratamiento: Optional[bool] = None
+
+    @field_validator("consentimiento")
+    @classmethod
+    def validar_consentimiento(cls, v):
+        if v is False:
+            raise ValueError("El consentimiento es obligatorio.")
+        return v
+
+    @field_validator("acepto_tratamiento")
+    @classmethod
+    def validar_acepto_tratamiento(cls, v):
+        if v is False:
+            raise ValueError("Debe aceptar el tratamiento de datos personales.")
+        return v
 
 
 class UsuarioLogin(BaseModel):

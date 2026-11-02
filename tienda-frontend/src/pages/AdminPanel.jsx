@@ -649,7 +649,7 @@ export default function AdminPanel() {
                   <div className="admin-prod-thumb-container">
                     <span className="admin-prod-badge-id">ID: #{prod.id}</span>
                     {imgSrc ? (
-                      <img src={imgSrc} alt={prod.nombre} className="admin-prod-thumb" loading="lazy" />
+                      <img src={imgSrc} alt={prod.nombre} width="120" height="120" className="admin-prod-thumb" loading="lazy" />
                     ) : (
                       <div className="admin-thumb-placeholder">
                         <span style={{ fontSize: "2rem" }}>📷</span>
@@ -897,6 +897,8 @@ export default function AdminPanel() {
                     <img
                       src={previewFotoNuevo}
                       alt="Vista previa nuevo postre"
+                      width="64"
+                      height="64"
                       style={{ width: "64px", height: "64px", objectFit: "cover", borderRadius: "6px" }}
                     />
                     <div style={{ flex: 1, fontSize: "0.85rem" }}>
@@ -1170,7 +1172,7 @@ export default function AdminPanel() {
                   </span>
                   <div style={{ width: "90px", height: "90px", borderRadius: "8px", overflow: "hidden", background: "#f8f9fa", border: "1px solid var(--color-border)" }}>
                     {urlImagen(modalImagenProd) ? (
-                      <img src={urlImagen(modalImagenProd)} alt="Actual" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <img src={urlImagen(modalImagenProd)} alt="Actual" width="90" height="90" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     ) : (
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#999", fontSize: "0.75rem" }}>
                         Sin foto
@@ -1187,7 +1189,7 @@ export default function AdminPanel() {
                   </span>
                   <div style={{ width: "90px", height: "90px", borderRadius: "8px", overflow: "hidden", background: "#f8f9fa", border: "2px dashed var(--color-primary)" }}>
                     {previewNuevaFoto ? (
-                      <img src={previewNuevaFoto} alt="Nueva" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <img src={previewNuevaFoto} alt="Nueva" width="90" height="90" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     ) : (
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "var(--color-primary)", fontSize: "0.75rem" }}>
                         Seleccionar

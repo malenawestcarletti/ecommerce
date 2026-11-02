@@ -1,7 +1,7 @@
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
-from app.dependencies import get_db, get_current_user, require_admin
+from app.dependencies import get_db, get_current_user, require_admin, get_optional_current_user
 from app.db import models
 from app.schemas.pedido import PedidoCreate, PedidoOut, RevocacionResponse
 from app.services import pedido_service, revocacion_service
@@ -48,9 +48,10 @@ def ver_pedido_por_id(
 
 
 @router.post("/{pedido_id}/revocacion", response_model=RevocacionResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/{pedido_id}/arrepentimiento", response_model=RevocacionResponse, status_code=status.HTTP_201_CREATED, include_in_schema=False)
 def revocar_compra_endpoint(
     pedido_id: int,
-    usuario: models.Usuario = Depends(get_current_user),
+    usuario: Optional[models.Usuario] = Depends(get_optional_current_user),
     db: Session = Depends(get_db)
 ):
     codigo = revocacion_service.revocar(db, usuario, pedido_id)

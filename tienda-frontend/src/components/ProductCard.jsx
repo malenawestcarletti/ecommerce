@@ -47,6 +47,8 @@ export default function ProductCard({ producto, onAddToCart, onProductUpdated })
           <img
             src={imgSrc}
             alt={producto.nombre}
+            width="400"
+            height="400"
             loading="lazy"
             className="object-cover product-image"
           />

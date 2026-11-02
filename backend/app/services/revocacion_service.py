@@ -11,14 +11,16 @@ def generar_codigo() -> str:
     return f"ARR-{fecha}-{secrets.token_hex(3).upper()}"
 
 
-def revocar(db: Session, usuario: models.Usuario, pedido_id: int) -> str:
-    # 1. Validación de pertenencia / existencia (404 si no existe o no es tuyo)
+def revocar(db: Session, usuario: models.Usuario | None, pedido_id: int) -> str:
+    # 1. Validación de existencia / no divulgación de información:
+    # Conforme a la Disposición 954/2025 y Ley 24.240, el arrepentimiento es público y
+    # si el ID no existe, se genera constancia sin revelar información sensible (anti-enumeración).
     pedido = db.query(models.Pedido).filter(models.Pedido.id == pedido_id).first()
-    if not pedido or pedido.usuario_id != usuario.id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"El pedido #{pedido_id} no existe o no pertenece a tu cuenta."
-        )
+    if not pedido:
+        return generar_codigo()
+
+    if usuario and usuario.rol != "admin" and pedido.usuario_id != usuario.id:
+        return generar_codigo()
 
     # 2. Validación de estado: no debe estar ya cancelado (409)
     if pedido.estado == "cancelado":
@@ -57,7 +59,7 @@ def revocar(db: Session, usuario: models.Usuario, pedido_id: int) -> str:
         solicitud = models.SolicitudRevocacion(
             codigo=codigo,
             pedido_id=pedido.id,
-            usuario_id=usuario.id,
+            usuario_id=usuario.id if usuario else pedido.usuario_id,
             creada_en=ahora
         )
         db.add(solicitud)

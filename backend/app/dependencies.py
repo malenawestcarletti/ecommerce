@@ -73,3 +73,27 @@ def require_admin(
             detail="No autorizado / No sos admin",
         )
     return current_user
+
+
+# Dependencia para obtener el usuario autenticado si existe (opcional)
+def get_optional_current_user(
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+) -> models.Usuario | None:
+    if not authorization or not authorization.startswith("Bearer "):
+        return None
+
+    token = authorization.split(" ", 1)[1].strip()
+    try:
+        payload = decode_access_token(token)
+        user_id = payload.get("sub")
+        if user_id is None:
+            return None
+    except jwt.PyJWTError:
+        return None
+
+    usuario = db.query(models.Usuario).filter(models.Usuario.id == int(user_id)).first()
+    if not usuario or not usuario.activo:
+        return None
+
+    return usuario

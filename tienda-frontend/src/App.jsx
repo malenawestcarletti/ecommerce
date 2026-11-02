@@ -174,6 +174,8 @@ function Inicio() {
         <img
           src="/hero_pastry.jpg"
           alt="Banner Pastelería Dulce Vicio"
+          width="1200"
+          height="400"
           className="hero-image-bg"
           onError={(e) => {
             e.target.style.display = "none";
@@ -283,7 +285,7 @@ function Inicio() {
               {previewFoto && (
                 <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1rem", padding: "0.5rem", background: "var(--bg-secondary)", borderRadius: "8px", border: "1px solid var(--color-border)" }}>
                   <div style={{ width: "64px", height: "64px", borderRadius: "6px", overflow: "hidden", flexShrink: 0 }} className="aspect-square">
-                    <img src={previewFoto} alt="Vista previa del nuevo postre" className="object-cover" />
+                    <img src={previewFoto} alt="Vista previa del nuevo postre" width="64" height="64" className="object-cover" />
                   </div>
                   <div style={{ fontSize: "0.8rem", color: "var(--color-text-light)" }}>
                     <strong style={{ color: "var(--color-text)", display: "block" }}>{archivoFoto?.name}</strong>

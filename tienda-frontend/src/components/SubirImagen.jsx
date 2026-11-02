@@ -113,6 +113,8 @@ export default function SubirImagen({ productoId, onSuccess, onCancel }) {
               <img
                 src={preview}
                 alt="Vista previa"
+                width="64"
+                height="64"
                 className="object-cover"
                 style={{ width: "100%", height: "100%", display: "block" }}
               />

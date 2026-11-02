@@ -212,3 +212,20 @@ async def read_root():
 def salud(db: Session = Depends(get_db)):
     db.execute(text("SELECT 1"))
     return {"estado": "ok", "base": "ok"}
+
+
+# --- BOTÓN DE ARREPENTIMIENTO (Ley 24.240 y Disposición 954/2025) ---
+@app.post("/arrepentimiento", tags=["Defensa"], status_code=201)
+def boton_arrepentimiento(
+    datos: dict | None = None,
+    pedido_id: int | None = None,
+    db: Session = Depends(get_db)
+):
+    from app.services import revocacion_service
+    pid = pedido_id
+    if datos and isinstance(datos, dict) and "pedido_id" in datos:
+        pid = datos["pedido_id"]
+    if pid is None:
+        pid = 0
+    codigo = revocacion_service.revocar(db, None, pid)
+    return {"codigo": codigo}

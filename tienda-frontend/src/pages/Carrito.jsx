@@ -3,10 +3,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { useCarrito } from "../context/CarritoContext";
 import { useAuth } from "../context/AuthContext";
 import { crearPedido } from "../services/api";
+import useConectado from "../hooks/useConectado";
 
 export default function Carrito() {
   const { items, quitar, vaciar, total } = useCarrito();
   const { estaAutenticado } = useAuth();
+  const conectado = useConectado();
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
@@ -20,8 +22,8 @@ export default function Carrito() {
   };
 
   const confirmar = async () => {
-    // Protección estricta contra múltiples clics
-    if (enviando) return;
+    // Protección estricta contra múltiples clics y sin conexión
+    if (enviando || !conectado) return;
 
     if (!estaAutenticado) {
       navigate("/login?redirect=/carrito");
@@ -138,6 +140,26 @@ export default function Carrito() {
             </div>
           )}
 
+          {/* Mensaje de estado sin conexión */}
+          {!conectado && (
+            <div
+              style={{
+                marginTop: "1rem",
+                padding: "0.8rem 1rem",
+                borderRadius: "8px",
+                backgroundColor: "#fff3cd",
+                color: "#856404",
+                border: "1px solid #ffeeba",
+                textAlign: "center",
+                fontWeight: "500",
+              }}
+              role="status"
+              id="offline-warning-msg"
+            >
+              Podés mirar el catálogo, pero para comprar necesitás internet.
+            </div>
+          )}
+
           {/* Botones de acción */}
           <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", marginTop: "1.5rem" }}>
             <button
@@ -154,7 +176,7 @@ export default function Carrito() {
               onClick={confirmar}
               className="btn"
               style={{ width: "auto", minWidth: "220px", padding: "0.75rem 2rem" }}
-              disabled={enviando}
+              disabled={enviando || !conectado}
               id="btn-confirmar-pedido"
             >
               {enviando ? "Confirmando…" : "Confirmar Compra"}
