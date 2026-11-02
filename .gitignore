@@ -20,3 +20,5 @@ htmlcov/
 # Uploads directory
 uploads/
 
+# Database backups
+*.sql
