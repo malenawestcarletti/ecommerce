@@ -3,6 +3,7 @@ from pathlib import Path
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
@@ -36,9 +37,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Montaje de archivos estáticos para subidas y demos
-app.mount("/static", StaticFiles(directory="uploads"), name="static")
-app.mount("/demo", StaticFiles(directory="app/static/demo"), name="demo")
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+class StaticConCache(StaticFiles):
+    async def get_response(self, path, scope):
+        respuesta = await super().get_response(path, scope)
+        if respuesta.status_code == 200:
+            respuesta.headers["Cache-Control"] = "public, max-age=2592000, immutable"
+        return respuesta
+
+Path("uploads/productos").mkdir(parents=True, exist_ok=True)
+# Montaje de archivos estáticos con caché para subidas y demos
+app.mount("/static", StaticConCache(directory="uploads"), name="static")
+app.mount("/demo", StaticConCache(directory="app/static/demo"), name="demo")
 
 # Monta los routers modulares
 app.include_router(auth.router)
