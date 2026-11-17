@@ -6,6 +6,7 @@ import { AuthProvider } from "./context/AuthContext";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import RutaProtegida from "./components/RutaProtegida";
+import ActualizacionDisponible from "./components/ActualizacionDisponible";
 
 import Catalogo from "./pages/Catalogo";
 import Carrito from "./pages/Carrito";
@@ -366,6 +367,7 @@ function App() {
         <BrowserRouter>
           <div className="app-container" style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
             <Navbar />
+            <ActualizacionDisponible />
 
             <div style={{ flex: 1 }}>
               <Routes>

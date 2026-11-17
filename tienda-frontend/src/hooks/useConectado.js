@@ -1,11 +1,7 @@
 import { useState, useEffect } from "react";
 
 export function useConectado() {
-  const [conectado, setConectado] = useState(
-    typeof navigator !== "undefined" && typeof navigator.onLine === "boolean"
-      ? navigator.onLine
-      : true
-  );
+  const [conectado, setConectado] = useState(navigator.onLine);
 
   useEffect(() => {
     const handleOnline = () => setConectado(true);

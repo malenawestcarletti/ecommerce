@@ -7,11 +7,16 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       manifest: {
         name: 'Dulce Vicio - Pastelería',
         short_name: 'DulceVicio',
+        description: 'Tienda online de pastelería artesanal y postres.',
+        lang: 'es',
+        theme_color: '#ffffff',
+        background_color: '#ffffff',
         display: 'standalone',
+        start_url: '/',
         icons: [
           {
             src: 'pwa-192x192.png',
@@ -24,7 +29,7 @@ export default defineConfig({
             type: 'image/png',
           },
           {
-            src: 'pwa-512x512.png',
+            src: 'maskable-icon-512x512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',
@@ -34,7 +39,7 @@ export default defineConfig({
       workbox: {
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/.*\/static\/.*/i,
+            urlPattern: ({ url }) => url.pathname.startsWith('/demo') || url.pathname.startsWith('/static'),
             handler: 'CacheFirst',
             options: {
               cacheName: 'imagenes-cache',
@@ -45,7 +50,7 @@ export default defineConfig({
             },
           },
           {
-            urlPattern: /^https:\/\/.*\/productos/i,
+            urlPattern: ({ request, url }) => request.method === 'GET' && url.pathname.endsWith('/productos'),
             handler: 'NetworkFirst',
             options: {
               cacheName: 'catalogo-cache',

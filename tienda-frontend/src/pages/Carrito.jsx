@@ -142,7 +142,7 @@ export default function Carrito() {
 
           {/* Mensaje de estado sin conexión */}
           {!conectado && (
-            <div
+            <p
               style={{
                 marginTop: "1rem",
                 padding: "0.8rem 1rem",
@@ -157,7 +157,7 @@ export default function Carrito() {
               id="offline-warning-msg"
             >
               Podés mirar el catálogo, pero para comprar necesitás internet.
-            </div>
+            </p>
           )}
 
           {/* Botones de acción */}
@@ -176,7 +176,7 @@ export default function Carrito() {
               onClick={confirmar}
               className="btn"
               style={{ width: "auto", minWidth: "220px", padding: "0.75rem 2rem" }}
-              disabled={enviando || !conectado}
+              disabled={!conectado || enviando}
               id="btn-confirmar-pedido"
             >
               {enviando ? "Confirmando…" : "Confirmar Compra"}
